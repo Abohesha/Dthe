@@ -1,4 +1,3 @@
-// ✅ server.js (Full working backend with CORS, auth, cookies, socket.io, routes)
 import express from "express";
 import http from "http";
 import dotenv from "dotenv";
@@ -12,7 +11,6 @@ import { dirname } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Import routes and DB
 import authRoutes from "./routes/auth.route.js";
 import userRoutes from "./routes/user.route.js";
 import postRoutes from "./routes/post.route.js";
@@ -25,7 +23,6 @@ dotenv.config();
 const app = express();
 const server = http.createServer(app);
 
-// ✅ Socket.io Setup
 const io = new Server(server, {
   cors: {
     origin: "http://localhost:5173",
@@ -36,11 +33,8 @@ const io = new Server(server, {
 
 let users = {};
 io.on("connection", (socket) => {
-  console.log("A user connected:", socket.id);
-
   socket.on("join", (userId) => {
     users[userId] = socket.id;
-    console.log(`${userId} connected`);
   });
 
   socket.on("send_message", async (data) => {
@@ -56,12 +50,9 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("disconnect", () => {
-    console.log("User disconnected:", socket.id);
-  });
+  socket.on("disconnect", () => {});
 });
 
-// ✅ CORS and Middleware
 app.use(cors({
   origin: "http://localhost:5173",
   credentials: true
@@ -69,17 +60,15 @@ app.use(cors({
 app.use(express.json({ limit: "5mb" }));
 app.use(cookieParser());
 
-// ✅ Simple auth middleware
 const authMiddleware = (req, res, next) => {
   const token = req.cookies?.token;
   if (!token) return res.status(401).json({ message: "Unauthorized" });
-  req.user = { id: "123", name: "Mock User" }; // replace with real token verification
+  req.user = { id: "123", name: "Mock User" };
   next();
 };
 
-// ✅ Auth routes for testing
 app.post("/api/v1/auth/login", (req, res) => {
-  const token = "testToken123"; // simulate JWT
+  const token = "testToken123";
   res.cookie("token", token, {
     httpOnly: true,
     secure: false,
@@ -97,18 +86,18 @@ app.post("/api/v1/auth/logout", (req, res) => {
   res.json({ message: "Logged out" });
 });
 
-// ✅ App routes
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/posts", postRoutes);
 app.use("/api/v1/notifications", notificationRoutes);
 app.use("/api/v1/connections", connectionRoutes);
 
-// ✅ Serve frontend if production
+const rootDir = path.resolve(__dirname, "..");
 if (process.env.NODE_ENV === "production") {
-  app.use(express.static(path.join(__dirname, "/frontend/dist")));
+  const distPath = path.join(rootDir, "frontend", "dist");
+  app.use(express.static(distPath));
   app.get("*", (req, res) => {
-    res.sendFile(path.resolve(__dirname, "frontend", "dist", "index.html"));
+    res.sendFile(path.join(distPath, "index.html"));
   });
 }
 
